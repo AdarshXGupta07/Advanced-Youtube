@@ -9,4 +9,6 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use( express.urlencoded({ extended: true }) );
+import userRoutes from "./routes/user.routes.js";
+app.use("/users", userRoutes);
 export default app;

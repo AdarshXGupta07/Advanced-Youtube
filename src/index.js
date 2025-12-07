@@ -1,14 +1,21 @@
 import dotenv from 'dotenv';
-dotenv.config({
-    path: './env'
-});
+import app from './app.js';
 import connectDB from './db/index.js';
-connectDB().then(
-    () => {
-        app.listen(process.env.PORT || 8000, () => {
-            console.log(`Server is running on port ${process.env.PORT || 8000}`);
-        });
-    }
-).catch((error) => {
-    console.error('Failed to start server:', error.message);
+
+dotenv.config({
+    path: './.env'  // Fixed path to include the dot
 });
+
+const PORT = process.env.PORT || 8000;
+
+// Connect to MongoDB and start the server
+connectDB()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    })
+    .catch((error) => {
+        console.error('Failed to start server:', error.message);
+        process.exit(1);
+    });
