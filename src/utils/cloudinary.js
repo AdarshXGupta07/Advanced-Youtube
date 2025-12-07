@@ -22,4 +22,4 @@ export const uploadToCloudinary=async (localFilePath)=>{
         return null;
     }
 }
-export {cloudinary};
+export {uploadToCloudinary};
