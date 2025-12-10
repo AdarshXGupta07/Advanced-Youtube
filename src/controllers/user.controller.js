@@ -1,56 +1,69 @@
-import asyncHandler from '../utils/asyncHandler.js';
-import ApiError from '../utils/ApiError.js';
-import User from '../models/user.model.js';
+import {asyncHandler} from '../utils/asyncHandler.js';
+import {ApiError} from '../utils/ApiError.js';
+import { User } from '../models/user.models.js';
+import {ApiResponse} from '../utils/ApiResponse.js';
 import { uploadToCloudinary } from '../utils/cloudinary.js';
-import { upload } from '../middlewares/multer.middlewares.js';
-const register=asyncHandler(async (req, res) => {
-    // 1.Take input data from req.body
-    // 2.validation if the data is not empty
-    //3.check if user already exists with the same email
-    //4 .check for images and avatar
-    //5.upload them into cloudinary
-    //6.save user into the database
-    //7.remove password and refresh token from the user object
-    //8.send response to the client
-    const {username,email,password}=req.body;//1.
-    if([username,fullName,email,password].some((field)=>field.trim()==="")){//2.
-        throw new ApiError(400,"All fields are required");
+
+const register = asyncHandler(async (req, res, next) => {
+    // 1. Take input data from req.body
+    const { username, email, password, fullName } = req.body;
+
+    // 2. Validate required fields
+    if (!username || !email || !password || !fullName) {
+        throw new ApiError(400, "All fields are required");
     }
-    const existingUser=await User.findOne({
-        $or:[
-            {email},
-            {username}
-        ]
-    })
-    if(existingUser){//3.
-        throw new ApiError(409,"User already exists with the same email or username");
-    }
-    const avatarLocalPath=req.files?.avatar?.[0]?.path;
-    const coverImageLocalPath=req.files?.coverImage?.[0]?.path;
-    if(!avatarLocalPath){//4.
-        throw new ApiError(400,"Avatar image is required");
-    }
-    const avatar=await uploadToCloudinary(avatarLocalPath);//5.
-    const coverImage=await uploadToCloudinary(coverImageLocalPath);//5.
-    const newUser = new User({
-        username:username.toLowerCase(),
-        fullName,
-        email,
-        password,
-        avatar:avatar.url,
-        coverImage:coverImage?.url
+
+    // 3. Check if user already exists
+    const existingUser = await User.findOne({
+        $or: [{ email }, { username }]
     });
-    const createdUser=await newUser.select("-password -refreshToken");
-    if(!createdUser){//6.
-        throw new ApiError(500,"Failed to create user");
+
+    if (existingUser) {
+        throw new ApiError(409, "User already exists with the same email or username");
     }
+
+    // 4. Check for avatar file
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar image is required");
+    }
+
+    // 5. Upload files to Cloudinary
+    const avatar = await uploadToCloudinary(avatarLocalPath);
+    if (!avatar || !avatar.url) {
+        throw new Error("Failed to upload avatar to Cloudinary");
+    }
+
+    // Upload cover image if provided
+    let coverImage;
+    const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+    if (coverImageLocalPath) {
+        coverImage = await uploadToCloudinary(coverImageLocalPath);
+    }
+
+    // 6. Create user in database
+    const user = await User.create({
+        username: username.toLowerCase(),
+        email,
+        fullName,
+        password,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || ""
+    });
+
+    // 7. Remove sensitive data from response
+    const createdUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    );
+
+    if (!createdUser) {
+        throw new ApiError(500, "Failed to create user");
+    }
+
+    // 8. Send success response
     return res.status(201).json(
-        new ApiResponse(200, createdUser, "User registered Successfully")
-    )
-    })
-    
+        new ApiResponse(201, createdUser, "User registered successfully")
+    );
+});
 
-
-
-
-export {register};
+export { register };
