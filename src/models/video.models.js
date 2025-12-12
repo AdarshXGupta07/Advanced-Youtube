@@ -30,7 +30,11 @@ const videoSchema=new Schema({
     isPublished:{
         type:Boolean,
         default:true,
-    }
+    },
+    videoFilePublicId: {
+  type: String,
+  required: false,
+},
 
 },{
     timestamps:true

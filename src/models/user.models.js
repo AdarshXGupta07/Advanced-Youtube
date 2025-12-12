@@ -70,10 +70,10 @@ userSchema.methods.generateRefreshToken=function (){
             expiresIn:process.env.REFRESH_TOKEN_EXPIRY,
         }   
     );
-
+    return refreshToken;
 }
 userSchema.methods.generateAccessToken=function (){
-    const refreshToken=jwt.sign(
+    const accessToken=jwt.sign(
         {
             _id:this._id,
             username:this.username,
@@ -85,8 +85,6 @@ userSchema.methods.generateAccessToken=function (){
             expiresIn:process.env.ACCESS_TOKEN_EXPIRY,
         }   
     );
-
+    return accessToken;
 }
 export const User=mongoose.model('User',userSchema);
-        
-    
