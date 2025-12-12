@@ -77,7 +77,19 @@ const updateComment=asyncHandler(async(req,res)=>{
 });
 
 const deleteComment=asyncHandler(async(req,res)=>{
+    const {commentId}=req.params;
+    const userId=req.user._id;
+    if (!isValidObjectId(commentId)) {
+        throw new ApiError(400, "Invalid comment ID");
+    }
+    if (comment.owner.toString() !== userId.toString()) {
+        throw new ApiError(403, "You are not allowed to update this comment");
+    }
+    await comment.deleteOne();
 
+    return res.status(200).json(
+        new ApiResponse(200, null, "Comment deleted successfully")
+    );
 });
 
 
